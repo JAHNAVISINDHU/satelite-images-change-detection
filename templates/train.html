@@ -1,0 +1,608 @@
+{% extends "base.html" %}
+{% block title %}Model Training — Satellite Images Change Detection{% endblock %}
+
+{% block content %}
+<style>
+    .train-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .train-header h2 {
+        font-size: 22px;
+        margin: 0;
+    }
+
+    .train-header p {
+        font-size: 13px;
+        color: var(--change-highlight);
+        margin: 4px 0 0;
+    }
+
+    .train-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    @media (max-width: 900px) {
+        .train-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Cards */
+    .control-card, .status-card {
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        height: fit-content;
+    }
+
+    .card-title {
+        font-size: 15px;
+        margin-bottom: 18px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+        font-family: var(--font-headings);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Forms */
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select {
+        margin: 0;
+    }
+
+    .btn-row {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-row button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    /* Status Items */
+    .status-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-idle { background: rgba(156, 163, 175, 0.1); border: 1px solid rgba(156, 163, 175, 0.4); color: #9ca3af; }
+    .status-running { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; }
+    .status-completed { background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.4); color: #4ade80; }
+    .status-failed { background: rgba(239, 83, 80, 0.1); border: 1px solid rgba(239, 83, 80, 0.4); color: #f87171; }
+    .status-stopped { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.4); color: #fbbf24; }
+
+    /* Progress */
+    .progress-container {
+        margin-bottom: 24px;
+    }
+
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .progress-bar-bg {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border-color);
+        height: 12px;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary) 0%, #0d9488 100%);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    /* Stats Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .metric-box {
+        background: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 14px;
+        text-align: center;
+    }
+
+    .metric-lbl {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    .metric-val {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-color);
+        font-family: var(--font-headings);
+    }
+
+    /* Live Chart */
+    .chart-container {
+        background: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+        height: 240px;
+        position: relative;
+    }
+
+    /* Live Logs */
+    .logs-container {
+        margin-top: 10px;
+    }
+
+    .logs-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .logs-box {
+        background: #020617;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 14px;
+        height: 180px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 11px;
+        color: #38bdf8;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+    }
+
+    .logs-box::-webkit-scrollbar {
+        width: 8px;
+    }
+    .logs-box::-webkit-scrollbar-track {
+        background: #020617;
+    }
+    .logs-box::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 4px;
+    }
+    .logs-box::-webkit-scrollbar-thumb:hover {
+        background: #334155;
+    }
+
+    /* Help Banner */
+    .help-banner {
+        background: rgba(15, 118, 110, 0.08);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 14px 18px;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        color: var(--text-color);
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .help-banner svg {
+        flex-shrink: 0;
+        color: var(--primary);
+        margin-top: 2px;
+    }
+
+    .device-info {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        text-align: center;
+    }
+</style>
+
+<div class="train-header">
+    <div>
+        <h2>Interactive Model Retraining</h2>
+        <p>Fine-tune the ChangeFormerV2 weights on your custom dataset to improve prediction accuracy.</p>
+    </div>
+</div>
+
+<div class="train-grid">
+    <!-- Left Column: Controls -->
+    <div class="control-card">
+        <div class="card-title">
+            <i data-lucide="sliders"></i> Parameters Configuration
+        </div>
+
+        <form id="train-form" onsubmit="startTraining(event)">
+            <div class="form-group">
+                <label for="dataset_path">Dataset Path (Local Folder)</label>
+                <input type="text" id="dataset_path" name="dataset_path" placeholder="e.g. static/synthetic_dataset" required>
+            </div>
+
+            <div class="form-group">
+                <label for="training_mode">Training Mode</label>
+                <select id="training_mode" name="training_mode">
+                    <option value="supervised">Supervised (Uses 'mask/' folder)</option>
+                    <option value="pseudo">Pseudo-Label (Auto-generates masks)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="epochs">Epochs</label>
+                <input type="number" id="epochs" name="epochs" min="1" max="100" value="5" required>
+            </div>
+
+            <div class="form-group">
+                <label for="batch_size">Batch Size</label>
+                <input type="number" id="batch_size" name="batch_size" min="1" max="64" value="4" required>
+            </div>
+
+            <div class="form-group">
+                <label for="learning_rate">Learning Rate</label>
+                <input type="text" id="learning_rate" name="learning_rate" value="0.001" required>
+            </div>
+
+            <div class="form-group">
+                <label for="optimizer">Optimizer</label>
+                <select id="optimizer" name="optimizer">
+                    <option value="Adam">Adam (Recommended)</option>
+                    <option value="SGD">SGD</option>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <button type="submit" id="btn-start" class="btn">
+                    <i data-lucide="play-circle"></i> Start Retraining
+                </button>
+                <button type="button" id="btn-stop" class="btn btn-secondary" onclick="stopTraining()" style="display:none; border-color: rgba(239, 83, 80, 0.4); color: #f87171;">
+                    <i data-lucide="stop-circle"></i> Stop Training
+                </button>
+                <button type="button" id="btn-synthetic" class="btn btn-secondary" onclick="generateSyntheticData()">
+                    <i data-lucide="folder-git-2"></i> Generate Synthetic Dataset
+                </button>
+            </div>
+        </form>
+
+        <div class="device-info" id="device-info">
+            Detecting hardware accelerator...
+        </div>
+    </div>
+
+    <!-- Right Column: Status & Real-time Progress -->
+    <div class="status-card">
+        <div class="status-header-row">
+            <h3 style="font-size: 15px; margin: 0; font-family: var(--font-headings);">Training Status</h3>
+            <span id="badge-status" class="status-badge status-idle">Idle</span>
+        </div>
+
+        <div class="help-banner" id="help-banner-info">
+            <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+            <div>
+                <strong>How to start:</strong> Paste the directory path containing your satellite image pairs. If you don't have a dataset ready, click <strong>"Generate Synthetic Dataset"</strong> to instantly create a toy training set of 100 image pairs.
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>Training Progress</span>
+                <span id="text-progress">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="bar-fill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-box">
+                <div class="metric-lbl">Epoch</div>
+                <div class="metric-val" id="metric-epoch">—</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-lbl">Avg Loss</div>
+                <div class="metric-val" id="metric-loss">—</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-lbl">Device</div>
+                <div class="metric-val" id="metric-device" style="font-size: 13px; line-height: 24px;">—</div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-container">
+            <canvas id="lossChart"></canvas>
+        </div>
+
+        <!-- Logs console -->
+        <div class="logs-container">
+            <div class="logs-title">Training Output Stream</div>
+            <div id="logs-box" class="logs-box">Dashboard initialized. Awaiting parameters and dataset...</div>
+        </div>
+
+        <!-- Model Swapping Activation -->
+        <div id="activation-row" style="margin-top: 24px; display: none; text-align: center;">
+            <button class="btn" onclick="activateModel()" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; width: 100%; font-size: 14px; box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);">
+                <i data-lucide="arrow-big-up-dash"></i> Swap and Activate New Model Weights
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    let pollInterval = null;
+    let chart = null;
+
+    // Initialize Chart
+    function initChart() {
+        const ctx = document.getElementById('lossChart').getContext('2d');
+        const gridColor = (localStorage.getItem('theme') || 'dark') === 'light' ? 'rgba(15, 118, 110, 0.1)' : 'rgba(15, 118, 110, 0.2)';
+        const textColor = (localStorage.getItem('theme') || 'dark') === 'light' ? '#0F766E' : '#E5E7EB';
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Training Loss',
+                    data: [],
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#0ea5e9'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { size: 10 } },
+                        title: { display: true, text: 'Steps', color: textColor, font: { size: 10, weight: 'bold' } }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { size: 10 } },
+                        title: { display: true, text: 'Loss', color: textColor, font: { size: 10, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    }
+
+    // Load initial device/training status
+    document.addEventListener('DOMContentLoaded', () => {
+        initChart();
+        checkStatus();
+        pollInterval = setInterval(checkStatus, 1500);
+    });
+
+    function checkStatus() {
+        fetch('/api/train/status')
+            .then(res => res.json())
+            .then(data => {
+                // Update device display
+                document.getElementById('device-info').innerText = 'Using device: ' + data.device;
+                document.getElementById('metric-device').innerText = data.device.toUpperCase();
+
+                // Update Status Badge
+                const badge = document.getElementById('badge-status');
+                badge.innerText = data.status;
+                badge.className = 'status-badge status-' + data.status;
+
+                // Toggle Buttons based on status
+                const btnStart = document.getElementById('btn-start');
+                const btnStop = document.getElementById('btn-stop');
+                const btnSynth = document.getElementById('btn-synthetic');
+                const activationRow = document.getElementById('activation-row');
+
+                if (data.status === 'running') {
+                    btnStart.style.display = 'none';
+                    btnStop.style.display = 'block';
+                    btnSynth.disabled = true;
+                    btnSynth.style.opacity = 0.5;
+                    activationRow.style.display = 'none';
+                    
+                    // Force text elements to show status info
+                    document.getElementById('help-banner-info').style.display = 'none';
+                } else {
+                    btnStart.style.display = 'block';
+                    btnStop.style.display = 'none';
+                    btnSynth.disabled = false;
+                    btnSynth.style.opacity = 1;
+
+                    if (data.status === 'completed') {
+                        activationRow.style.display = 'block';
+                    } else {
+                        activationRow.style.display = 'none';
+                    }
+                }
+
+                // Update Metrics
+                document.getElementById('metric-epoch').innerText = data.status !== 'idle' ? `${data.epoch}/${data.total_epochs}` : '—';
+                document.getElementById('metric-loss').innerText = data.current_loss > 0 ? data.current_loss.toFixed(4) : '—';
+
+                // Update Progress
+                document.getElementById('text-progress').innerText = data.progress + '%';
+                document.getElementById('bar-fill').style.width = data.progress + '%';
+
+                // Update Logs
+                const logsBox = document.getElementById('logs-box');
+                const originalText = logsBox.innerText;
+                const newText = data.logs.join('\n');
+                
+                if (originalText !== newText) {
+                    logsBox.innerText = newText;
+                    // Auto scroll to bottom
+                    logsBox.scrollTop = logsBox.scrollHeight;
+                }
+
+                // Update Chart
+                if (data.loss_history && data.loss_history.length > 0) {
+                    const stepLabels = Array.from({length: data.loss_history.length}, (_, i) => i + 1);
+                    chart.data.labels = stepLabels;
+                    chart.data.datasets[0].data = data.loss_history;
+                    chart.update();
+                } else if (data.status === 'idle') {
+                    chart.data.labels = [];
+                    chart.data.datasets[0].data = [];
+                    chart.update();
+                }
+            })
+            .catch(err => console.error('Error checking training status:', err));
+    }
+
+    function startTraining(e) {
+        e.preventDefault();
+        
+        const path = document.getElementById('dataset_path').value.trim();
+        const mode = document.getElementById('training_mode').value;
+        const epochs = document.getElementById('epochs').value;
+        const batch_size = document.getElementById('batch_size').value;
+        const lr = document.getElementById('learning_rate').value;
+        const optimizer = document.getElementById('optimizer').value;
+
+        const body = {
+            dataset_path: path,
+            mode: mode,
+            epochs: parseInt(epochs),
+            batch_size: parseInt(batch_size),
+            lr: parseFloat(lr),
+            optimizer: optimizer
+        };
+
+        fetch('/api/train/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert('Failed to start training: ' + data.error);
+            } else {
+                checkStatus();
+            }
+        })
+        .catch(err => {
+            alert('Error initiating training connection.');
+            console.error(err);
+        });
+    }
+
+    function stopTraining() {
+        if (!confirm('Are you sure you want to abort the current training session?')) return;
+        
+        fetch('/api/train/stop', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                checkStatus();
+            })
+            .catch(err => console.error(err));
+    }
+
+    function generateSyntheticData() {
+        const btnSynth = document.getElementById('btn-synthetic');
+        btnSynth.disabled = true;
+        btnSynth.innerText = 'Generating dataset...';
+
+        fetch('/api/train/generate-synthetic', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                btnSynth.disabled = false;
+                btnSynth.innerHTML = '<i data-lucide="folder-git-2"></i> Generate Synthetic Dataset';
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    document.getElementById('dataset_path').value = data.dataset_path;
+                    alert('Synthetic dataset successfully created inside: ' + data.dataset_path + '\n\nIt contains 100 pairs of image A, image B, and their ground truth masks. You can now click "Start Retraining" to test the pipeline!');
+                }
+            })
+            .catch(err => {
+                btnSynth.disabled = false;
+                btnSynth.innerHTML = '<i data-lucide="folder-git-2"></i> Generate Synthetic Dataset';
+                alert('Connection error while generating dataset.');
+            });
+    }
+
+    function activateModel() {
+        if (!confirm('This will replace the active weights (best_model.pth) and reload the model. Proceed?')) return;
+
+        fetch('/api/train/activate', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Activation failed: ' + data.error);
+                } else {
+                    alert('Success! Newly trained weights are now active in the inference pipeline.');
+                    window.location.href = '/dashboard';
+                }
+            })
+            .catch(err => console.error(err));
+    }
+</script>
+{% endblock %}

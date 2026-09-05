@@ -1,0 +1,601 @@
+{% extends "base.html" %}
+{% block title %}Settings — Satellite Images Change Detection{% endblock %}
+
+{% block content %}
+<style>
+    .settings-header { margin-bottom: 32px; }
+    .settings-header h2 { font-size: 22px; margin-bottom: 6px; }
+    .settings-header p  { font-size: 13px; color: var(--text-muted); }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 24px;
+    }
+
+    /* Sidebar Nav */
+    .settings-nav {
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px;
+        height: fit-content;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .settings-nav a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 14px;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    .settings-nav a:hover, .settings-nav a.active {
+        background: var(--primary-glow);
+        color: var(--primary);
+        border-left: 3px solid var(--primary);
+        border-radius: 0 8px 8px 0;
+    }
+    .settings-nav a .nav-icon { width: 16px; height: 16px; stroke-width: 2.2px; }
+
+    /* Content Panels */
+    .settings-panel {
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 30px 32px;
+    }
+
+    .settings-panel h3 {
+        font-size: 16px;
+        margin-bottom: 6px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 24px;
+    }
+
+    /* Theme Cards */
+    .theme-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 28px;
+    }
+
+    .theme-card {
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .theme-card:hover { border-color: var(--primary); }
+    .theme-card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+
+    .theme-card .check {
+        position: absolute;
+        top: 12px; right: 12px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: var(--primary);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #fff;
+        font-weight: 700;
+    }
+    .theme-card.selected .check { display: flex; }
+
+    .theme-preview {
+        height: 80px;
+        border-radius: 8px;
+        margin-bottom: 14px;
+        border: 1px solid rgba(255,255,255,0.06);
+        overflow: hidden;
+        position: relative;
+    }
+    .theme-preview .bar  { height: 14px; margin-bottom: 6px; border-radius: 3px; }
+    .theme-preview .bar1 { width: 60%; }
+    .theme-preview .bar2 { width: 40%; }
+    .theme-preview .bar3 { width: 75%; }
+
+    .dark-preview  { background: #030712; padding: 10px; }
+    .dark-preview  .bar { background: #3b82f6; opacity: 0.35; }
+
+    .light-preview { background: #f4f6f9; padding: 10px; }
+    .light-preview .bar { background: #2563eb; opacity: 0.35; }
+
+    .theme-card-title {
+        font-family: var(--font-headings);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 6px;
+    }
+    .theme-card-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .btn-apply {
+        font-family: var(--font-headings);
+        font-size: 13px;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: #fff;
+        border: none;
+        padding: 11px 28px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.25s;
+        box-shadow: 0 4px 16px var(--primary-glow);
+    }
+    .btn-apply:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+
+    /* Account info */
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key {
+        min-width: 140px;
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+    .info-val {
+        font-size: 14px;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
+    /* Metrics Cards */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .metric-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 18px 20px;
+        text-align: center;
+        transition: border-color 0.2s;
+    }
+
+    .metric-card:hover { border-color: var(--primary); }
+
+    .metric-card .m-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .metric-card .m-value {
+        font-family: var(--font-headings);
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1;
+    }
+
+    .metric-card .m-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .metric-card.highlight {
+        border-color: var(--primary);
+        background: var(--primary-glow);
+    }
+
+    .metric-card.highlight .m-value { color: var(--primary); }
+
+    .best-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .best-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .best-card .best-icon {
+        width: 38px; height: 38px;
+        border-radius: 8px;
+        background: var(--primary-glow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--primary);
+    }
+
+    .best-card .best-info .best-title {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .best-card .best-info .best-val {
+        font-family: var(--font-headings);
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--primary);
+    }
+
+    /* Compact sparkline */
+    .sparkline-wrap {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+    }
+    .sparkline-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .spark-legend {
+        display: flex;
+        gap: 12px;
+    }
+    .spark-leg-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+    .spark-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .spark-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 56px;
+    }
+    .spark-group {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        flex: 1;
+    }
+    .spark-bar {
+        flex: 1;
+        border-radius: 2px 2px 0 0;
+        transition: height 0.6s ease;
+        min-height: 2px;
+    }
+    .spark-bar.acc { background: var(--primary); opacity: 0.85; }
+    .spark-bar.f1  { background: #FDE68A;       opacity: 0.75; }
+
+    .metrics-loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .metrics-loading .spin {
+        display: inline-block;
+        width: 24px; height: 24px;
+        border: 3px solid var(--border-color);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spinner 0.8s linear infinite;
+        margin-bottom: 10px;
+    }
+
+    @keyframes spinner { to { transform: rotate(360deg); } }
+
+    @media (max-width: 700px) {
+        .settings-grid  { grid-template-columns: 1fr; }
+        .theme-cards    { grid-template-columns: 1fr; }
+        .settings-nav   { flex-direction: row; flex-wrap: wrap; }
+        .settings-nav a { border-left: none; border-bottom: 3px solid transparent; border-radius: 8px; }
+        .settings-nav a:hover, .settings-nav a.active { border-left: none; border-bottom: 3px solid var(--primary); border-radius: 8px 8px 0 0; }
+        .metrics-grid   { grid-template-columns: 1fr 1fr; }
+        .best-row       { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="settings-header">
+    <h2>Settings</h2>
+    <p>Manage your display preferences and account information.</p>
+</div>
+
+<div class="settings-grid">
+    <!-- Sidebar Nav -->
+    <div class="settings-nav">
+        <a href="#appearance" class="active" onclick="showPanel('appearance',this)">
+            <i data-lucide="palette" class="nav-icon"></i> Appearance
+        </a>
+        <a href="#metrics" onclick="showPanel('metrics',this); loadMetrics();">
+            <i data-lucide="bar-chart-2" class="nav-icon"></i> Model Metrics
+        </a>
+        <a href="#account" onclick="showPanel('account',this)">
+            <i data-lucide="user" class="nav-icon"></i> Account Info
+        </a>
+        <a href="#about" onclick="showPanel('about',this)">
+            <i data-lucide="info" class="nav-icon"></i> About
+        </a>
+    </div>
+
+    <!-- Appearance Panel -->
+    <div class="settings-panel" id="panel-appearance">
+        <h3>Appearance</h3>
+
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+            Choose your preferred color theme. The selection is saved automatically and persists across pages.
+        </p>
+
+        <div class="theme-cards">
+            <div class="theme-card" id="card-dark" onclick="pickTheme('dark')">
+                <div class="check"><i data-lucide="check" style="width: 12px; height: 12px; stroke-width: 3.5px;"></i></div>
+                <div class="theme-preview dark-preview">
+                    <div class="bar bar1"></div>
+                    <div class="bar bar2"></div>
+                    <div class="bar bar3"></div>
+                </div>
+                <div class="theme-card-title">Dark Theme</div>
+                <div class="theme-card-desc">Deep navy background with glowing electric blue accents. Best for low-light environments.</div>
+            </div>
+
+            <div class="theme-card" id="card-light" onclick="pickTheme('light')">
+                <div class="check"><i data-lucide="check" style="width: 12px; height: 12px; stroke-width: 3.5px;"></i></div>
+                <div class="theme-preview light-preview">
+                    <div class="bar bar1"></div>
+                    <div class="bar bar2"></div>
+                    <div class="bar bar3"></div>
+                </div>
+                <div class="theme-card-title">Light Theme</div>
+                <div class="theme-card-desc">Clean light background with vivid royal blue. Ideal for bright office environments.</div>
+            </div>
+        </div>
+
+        <button class="btn-apply" id="apply-btn" onclick="applyTheme()">Apply Theme</button>
+        <span id="apply-msg" style="margin-left:14px;font-size:13px;color:var(--primary);display:none; align-items:center; gap: 4px;"><i data-lucide="check" style="width: 14px; height: 14px; stroke-width: 3px;"></i> Applied!</span>
+    </div>
+
+    <!-- Model Metrics Panel (hidden by default) -->
+    <div class="settings-panel" id="panel-metrics" style="display:none;">
+        <h3>Model Performance Metrics</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+            Aggregated performance statistics across all your detection analyses. Metrics are computed
+            against a pixel-level colour-difference baseline.
+        </p>
+
+        <div id="metrics-loading" class="metrics-loading">
+            <div class="spin"></div><br>Loading metrics…
+        </div>
+
+        <div id="metrics-content" style="display:none;">
+            <!-- Summary cards -->
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:12px;">
+                Average Performance
+            </div>
+            <div class="metrics-grid" id="avg-cards"></div>
+
+            <!-- Best scores -->
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:12px;">
+                Best Recorded Scores
+            </div>
+            <div class="best-row" id="best-cards"></div>
+
+            <!-- Compact sparkline -->
+            <div class="sparkline-wrap">
+                <div class="sparkline-title">
+                    Last 10 Runs
+                    <span class="spark-legend">
+                        <span class="spark-leg-item"><span class="spark-dot" style="background:var(--primary);"></span>Accuracy</span>
+                        <span class="spark-leg-item"><span class="spark-dot" style="background:#FDE68A;"></span>F1-Score</span>
+                    </span>
+                </div>
+                <div class="spark-bars" id="sparkBars"></div>
+            </div>
+
+            <!-- Total analyses -->
+            <div class="info-row">
+                <span class="info-key">Total Analyses Run</span>
+                <span class="info-val" id="total-analyses-val">&mdash;</span>
+            </div>
+        </div>
+
+        <div id="metrics-empty" style="display:none;text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">
+            <i data-lucide="inbox" style="width:36px;height:36px;display:block;margin:0 auto 12px;opacity:0.4;"></i>
+            No analyses found yet. Run your first detection on the Dashboard.
+        </div>
+    </div>
+
+    <!-- Account Panel (hidden by default) -->
+    <div class="settings-panel" id="panel-account" style="display:none;">
+        <h3>Account Information</h3>
+        <div class="info-row">
+            <span class="info-key">Logged in as</span>
+            <span class="info-val">{{ session.get('full_name', '—') }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">Username</span>
+            <span class="info-val">@{{ session.get('username', '—') }}</span>
+        </div>
+        <div class="info-row" style="margin-top:28px;">
+            <a href="/logout" class="btn btn-secondary" style="font-size:13px;padding:10px 22px;">Sign Out</a>
+        </div>
+    </div>
+
+    <!-- About Panel (hidden by default) -->
+    <div class="settings-panel" id="panel-about" style="display:none;">
+        <h3>About This Platform</h3>
+        <p style="font-size:14px;color:var(--text-muted);line-height:1.8;margin-bottom:16px;">
+            <strong style="color:var(--primary);">Satellite Images Change Detection</strong> is an AI-powered web platform
+            that uses the <strong>ChangeFormerV2</strong> deep learning architecture — a hybrid Convolutional Neural
+            Network and Transformer — to identify surface-level changes between two multi-temporal satellite images.
+        </p>
+        <p style="font-size:14px;color:var(--text-muted);line-height:1.8;margin-bottom:16px;">
+            It also provides <strong>Explainable AI (XAI)</strong> heatmaps using gradient-weighted colormap overlays,
+            giving you visual insight into what the model is detecting.
+        </p>
+        <div class="info-row">
+            <span class="info-key">Model</span>
+            <span class="info-val">ChangeFormerV2</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">Framework</span>
+            <span class="info-val">PyTorch + Flask</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key">Input Size</span>
+            <span class="info-val">256 × 256 px</span>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    let selectedTheme = localStorage.getItem('theme') || 'dark';
+    let metricsLoaded = false;
+
+    function updateCards() {
+        document.getElementById('card-dark').classList.toggle('selected', selectedTheme === 'dark');
+        document.getElementById('card-light').classList.toggle('selected', selectedTheme === 'light');
+    }
+
+    function pickTheme(t) {
+        selectedTheme = t;
+        updateCards();
+    }
+
+    function applyTheme() {
+        localStorage.setItem('theme', selectedTheme);
+        document.body.classList.toggle('light-theme', selectedTheme === 'light');
+        const msg = document.getElementById('apply-msg');
+        msg.style.display = 'inline-flex';
+        setTimeout(() => msg.style.display = 'none', 2000);
+    }
+
+    function showPanel(name, el) {
+        ['appearance','metrics','account','about'].forEach(p => {
+            const el2 = document.getElementById('panel-' + p);
+            if (el2) el2.style.display = 'none';
+        });
+        document.getElementById('panel-' + name).style.display = 'block';
+        document.querySelectorAll('.settings-nav a').forEach(a => a.classList.remove('active'));
+        el.classList.add('active');
+        event.preventDefault();
+    }
+
+    function pct(v) { return (v !== null && v !== undefined) ? v + '%' : '—'; }
+
+    function loadMetrics() {
+        if (metricsLoaded) return;
+        fetch('/api/metrics')
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('metrics-loading').style.display = 'none';
+                if (!d.total_analyses || d.total_analyses === 0) {
+                    document.getElementById('metrics-empty').style.display = 'block';
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+                document.getElementById('metrics-content').style.display = 'block';
+                document.getElementById('total-analyses-val').textContent = d.total_analyses;
+
+                // Average cards
+                const avgData = [
+                    { label: 'Avg Accuracy',    value: pct(d.avg_accuracy),    cls: 'highlight' },
+                    { label: 'Avg F1-Score',    value: pct(d.avg_f1),          cls: 'highlight' },
+                    { label: 'Avg Sensitivity', value: pct(d.avg_sensitivity), cls: '' },
+                    { label: 'Avg Precision',   value: pct(d.avg_precision),   cls: '' },
+                    { label: 'Avg Confidence',  value: pct(d.avg_confidence),  cls: '' },
+                    { label: 'Avg Change Area', value: pct(d.avg_change_pct),  cls: '' },
+                ];
+                document.getElementById('avg-cards').innerHTML = avgData.map(m =>
+                    `<div class="metric-card ${m.cls}">
+                        <div class="m-label">${m.label}</div>
+                        <div class="m-value">${m.value}</div>
+                        <div class="m-sub">across ${d.total_analyses} runs</div>
+                     </div>`
+                ).join('');
+
+                // Best cards
+                const bestData = [
+                    { label: 'Best Accuracy', value: pct(d.best_accuracy), icon: 'trophy' },
+                    { label: 'Best F1-Score', value: pct(d.best_f1),       icon: 'award'  },
+                ];
+                document.getElementById('best-cards').innerHTML = bestData.map(b =>
+                    `<div class="best-card">
+                        <div class="best-icon"><i data-lucide="${b.icon}" style="width:18px;height:18px;"></i></div>
+                        <div class="best-info">
+                            <div class="best-title">${b.label}</div>
+                            <div class="best-val">${b.value}</div>
+                        </div>
+                     </div>`
+                ).join('');
+
+                // Compact sparkline bars
+                const container = document.getElementById('sparkBars');
+                container.innerHTML = '';
+                const n = d.trend_accuracy.length;
+                for (let i = 0; i < n; i++) {
+                    const accH = Math.max(2, (d.trend_accuracy[i] / 100) * 56);
+                    const f1H  = Math.max(2, (d.trend_f1[i]       / 100) * 56);
+                    const grp  = document.createElement('div');
+                    grp.className = 'spark-group';
+                    grp.title = `Run ${i+1}: Acc ${d.trend_accuracy[i]}% / F1 ${d.trend_f1[i]}%`;
+                    grp.innerHTML =
+                        `<div class="spark-bar acc" style="height:${accH}px"></div>` +
+                        `<div class="spark-bar f1"  style="height:${f1H}px"></div>`;
+                    container.appendChild(grp);
+                }
+                metricsLoaded = true;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            })
+            .catch(() => {
+                document.getElementById('metrics-loading').innerHTML = '<span style="color:#f87171;">Failed to load metrics. Make sure you are logged in.</span>';
+            });
+    }
+
+    updateCards();
+</script>
+{% endblock %}

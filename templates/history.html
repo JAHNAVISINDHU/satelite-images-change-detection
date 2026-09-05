@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}History — Satellite Images Change Detection{% endblock %}
+
+{% block content %}
+<style>
+    .history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+    .history-header h2 { font-size: 22px; margin: 0; }
+    .history-header p  { font-size: 13px; color: var(--text-muted); margin: 4px 0 0; }
+
+    .history-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 20px;
+    }
+
+    .history-card {
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: border-color 0.25s, transform 0.25s;
+    }
+    .history-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 28px var(--primary-glow);
+    }
+
+    .card-thumb {
+        width: 100%;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        display: block;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-body { padding: 16px 18px; }
+
+    .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .card-date {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-family: var(--font-body);
+    }
+
+    .badge {
+        font-family: var(--font-headings);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 4px 10px;
+        border-radius: 20px;
+    }
+    .badge-change   { background: rgba(239, 83, 80, 0.1); color: #f87171; border: 1px solid rgba(239, 83, 80, 0.3); }
+    .badge-nochange { background: rgba(74, 222, 128, 0.1); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+
+    .card-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .mini-stat {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 7px;
+        padding: 8px 6px;
+        text-align: center;
+    }
+    .mini-stat .ms-label {
+        font-size: 9px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .mini-stat .ms-val {
+        font-family: var(--font-headings);
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--primary);
+    }
+    .mini-stat .ms-unit { font-size: 9px; color: var(--text-muted); }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+    .empty-state .empty-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+        color: var(--text-muted);
+    }
+    .empty-state .empty-icon svg {
+        width: 56px;
+        height: 56px;
+        stroke-width: 1.2px;
+    }
+    .empty-state h3 { font-size: 18px; margin-bottom: 10px; color: var(--text-muted); }
+    .empty-state p  { font-size: 14px; margin-bottom: 24px; }
+
+    .count-badge {
+        display: inline-flex;
+        align-items: center;
+        background: var(--primary-glow);
+        border: 1px solid var(--border-color);
+        color: var(--primary);
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        gap: 6px;
+    }
+
+    @media (max-width: 600px) {
+        .history-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="history-header">
+    <div>
+        <h2>Detection History</h2>
+        <p>All your past satellite change detection operations are listed here.</p>
+    </div>
+    {% if history %}
+    <div class="count-badge" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="satellite" style="width: 14px; height: 14px;"></i> {{ history | length }} Operation{{ 's' if history | length != 1 else '' }}
+    </div>
+    {% endif %}
+</div>
+
+{% if history %}
+<div class="history-grid">
+    {% for item in history %}
+    <div class="history-card">
+        <img class="card-thumb" src="{{ item.result_image }}" alt="Change detection result">
+
+        <div class="card-body">
+            <div class="card-meta">
+                <div>
+                    <div class="card-date" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="calendar" style="width: 12px; height: 12px;"></i> {{ item.timestamp }}
+                    </div>
+                </div>
+                {% if item.change_percent is not none and item.change_percent > 0.5 %}
+                    <span class="badge badge-change">CHANGE DETECTED</span>
+                {% else %}
+                    <span class="badge badge-nochange">STABLE</span>
+                {% endif %}
+            </div>
+
+            <div class="card-stats">
+                <div class="mini-stat">
+                    <div class="ms-label">Change</div>
+                    <div class="ms-val">{{ item.change_percent | round(1) if item.change_percent is not none else '—' }}</div>
+                    <div class="ms-unit">%</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-label">Confidence</div>
+                    <div class="ms-val">{{ item.confidence | round(1) if item.confidence is not none else '—' }}</div>
+                    <div class="ms-unit">%</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-label">Accuracy</div>
+                    <div class="ms-val">{{ item.accuracy | round(1) if item.accuracy is not none else '—' }}</div>
+                    <div class="ms-unit">%</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-label">F1-Score</div>
+                    <div class="ms-val">{{ item.f1_score | round(1) if item.f1_score is not none else '—' }}</div>
+                    <div class="ms-unit">%</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-label">Sensitivity</div>
+                    <div class="ms-val">{{ item.sensitivity | round(1) if item.sensitivity is not none else '—' }}</div>
+                    <div class="ms-unit">%</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-label">Precision</div>
+                    <div class="ms-val">{{ item.precision | round(1) if item.precision is not none else '—' }}</div>
+                    <div class="ms-unit">%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <span class="empty-icon"><i data-lucide="satellite"></i></span>
+    <h3>No Detections Yet</h3>
+    <p>You haven't run any change detection operations. Head to the Dashboard to get started.</p>
+    <a href="/dashboard" class="btn">Go to Dashboard →</a>
+</div>
+{% endif %}
+
+{% endblock %}

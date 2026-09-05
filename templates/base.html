@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Satellite Images Change Detection Portal">
+    <title>{% block title %}Satellite Images Change Detection{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* ===== CSS VARIABLES ===== */
+        :root {
+            --bg-color: #041D1A;
+            --text-color: #E5E7EB;
+            --text-muted: rgba(229, 231, 235, 0.7);
+            --primary: #0F766E;
+            --primary-dark: #0D5F58;
+            --primary-glow: rgba(15, 118, 110, 0.25);
+            --secondary-bg: #083632;
+            --card-bg: #083632;
+            --border-color: rgba(15, 118, 110, 0.4);
+            --border-hover: rgba(15, 118, 110, 0.8);
+            --nav-bg: #083632;
+            --input-bg: #041D1A;
+            --shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+            --change-highlight: #FDE68A;
+            --btn-text: #FDE68A;
+            --font-headings: 'Plus Jakarta Sans', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body.light-theme {
+            --bg-color: #E5E7EB;
+            --text-color: #0F766E;
+            --text-muted: rgba(15, 118, 110, 0.7);
+            --primary: #0F766E;
+            --primary-dark: #0D5F58;
+            --primary-glow: rgba(15, 118, 110, 0.15);
+            --secondary-bg: #FFFFFF;
+            --card-bg: #FFFFFF;
+            --border-color: rgba(15, 118, 110, 0.25);
+            --border-hover: rgba(15, 118, 110, 0.6);
+            --nav-bg: #FFFFFF;
+            --input-bg: #FFFFFF;
+            --shadow: 0 8px 40px rgba(15, 118, 110, 0.1);
+            --change-highlight: #0F766E;
+            --btn-text: #FDE68A;
+        }
+
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-headings);
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* ===== CANVAS (Neural Network BG) ===== */
+        #nn-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== LUCIDE INTEGRATION ===== */
+        .lucide {
+            display: inline-block;
+            vertical-align: middle;
+            stroke-width: 2px;
+            width: 16px;
+            height: 16px;
+        }
+        
+        .sidebar .nav-icon {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2px;
+            color: currentColor;
+        }
+
+        .brand-icon-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            background: var(--primary-glow);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .brand-icon-wrapper svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2px;
+        }
+
+        /* ===== SATELLITES CONTAINER ===== */
+        .satellites-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .sat {
+            position: absolute;
+            opacity: 0.14;
+            animation: floatSat linear infinite;
+        }
+        .sat svg, .sat .lucide { fill: none; stroke: var(--primary); }
+
+        .sat-1 { top: 8%;  left: 5%;  width: 52px; animation-duration: 18s; animation-delay: 0s; }
+        .sat-2 { top: 15%; right: 8%; width: 38px; animation-duration: 24s; animation-delay: -6s; }
+        .sat-3 { top: 60%; left: 2%;  width: 46px; animation-duration: 20s; animation-delay: -3s; }
+        .sat-4 { bottom: 10%; right: 5%; width: 60px; animation-duration: 22s; animation-delay: -9s; }
+        .sat-5 { top: 40%; right: 2%;  width: 34px; animation-duration: 16s; animation-delay: -12s; }
+        .sat-6 { bottom: 30%; left: 8%; width: 42px; animation-duration: 19s; animation-delay: -4s; }
+
+        @keyframes floatSat {
+            0%   { transform: translateY(0px) rotate(0deg); }
+            25%  { transform: translateY(-18px) rotate(8deg); }
+            50%  { transform: translateY(0px) rotate(0deg); }
+            75%  { transform: translateY(18px) rotate(-8deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        /* Orbit ring animation for login/register pages */
+        .orbit-wrap {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .orbit-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(59, 130, 246, 0.06);
+        }
+        .orbit-ring.r1 { width: 520px; height: 520px; top: -260px; left: -260px; animation: spin 40s linear infinite; }
+        .orbit-ring.r2 { width: 780px; height: 780px; top: -390px; left: -390px; animation: spin 65s linear infinite reverse; }
+        .orbit-ring.r3 { width: 1020px; height: 1020px; top: -510px; left: -510px; animation: spin 90s linear infinite; }
+
+        .orbit-dot {
+            position: absolute;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            top: -3px; left: calc(50% - 3px);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* ===== SIDEBAR NAVIGATION ===== */
+        .sidebar {
+            width: 280px;
+            background: var(--nav-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 36px 24px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; bottom: 0; left: 0;
+            z-index: 100;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .logo {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .sidebar .logo svg {
+            width: 32px; height: 32px;
+            flex-shrink: 0;
+        }
+
+        .sidebar .logo div {
+            font-family: var(--font-headings);
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-color);
+            line-height: 1.3;
+            letter-spacing: 0.02em;
+        }
+
+        .sidebar .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .sidebar .nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 12px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar .nav-links a:hover {
+            color: var(--primary);
+            background: var(--primary-glow);
+        }
+
+        .sidebar .nav-links a.active {
+            color: #ffffff;
+            background: var(--primary);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+        
+        body.light-theme .sidebar .nav-links a.active {
+            color: #ffffff;
+        }
+
+        .sidebar .nav-icon {
+            font-size: 16px;
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .sidebar .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--primary-glow);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sidebar .nav-user svg {
+            flex-shrink: 0;
+        }
+
+        .logout-btn {
+            text-align: center;
+            width: 100%;
+        }
+
+        /* ===== MAIN APP LAYOUT ===== */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            flex-grow: 1;
+            padding: 40px;
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* ===== AUTH LAYOUT (LOGGED OUT) ===== */
+        .auth-layout {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .auth-header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .auth-header .logo {
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auth-header .logo svg {
+            width: 38px; height: 38px;
+        }
+
+        .auth-header .logo div {
+            font-family: var(--font-headings);
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-color);
+            letter-spacing: 0.02em;
+        }
+
+        .auth-content {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* ===== FLASH MESSAGES ===== */
+        .flash-messages { margin-bottom: 20px; }
+
+        .alert {
+            padding: 12px 18px;
+            border-radius: 8px;
+            background: var(--primary-glow);
+            border: 1px solid var(--border-color);
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn, button[type="submit"] {
+            font-family: var(--font-headings);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--btn-text, #fff);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 4px 16px var(--primary-glow);
+        }
+
+        .btn:hover, button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--primary);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-glow);
+            box-shadow: none;
+        }
+
+        /* ===== INPUTS ===== */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 11px 14px;
+            margin: 6px 0 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            font-size: 14px;
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* ===== LINKS ===== */
+        a.inline-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a.inline-link:hover { text-decoration: underline; }
+
+        /* Responsive sidebar toggle for mobile */
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 70px;
+                padding: 30px 10px;
+                align-items: center;
+            }
+            .sidebar .logo div, .sidebar .nav-links a span:not(.nav-icon), .sidebar .nav-user span.username {
+                display: none;
+            }
+            .sidebar .nav-links a {
+                padding: 12px;
+                justify-content: center;
+            }
+            .main-content {
+                margin-left: 70px;
+                padding: 24px;
+            }
+            .sidebar .nav-user {
+                padding: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+
+    <script>
+        // Apply saved theme immediately to prevent flicker
+        (function() {
+            const t = localStorage.getItem('theme') || 'dark';
+            if (t === 'light') document.documentElement.classList.add('light-theme-pre');
+        })();
+    </script>
+</head>
+
+<body>
+    <!-- Neural Network Canvas -->
+    <canvas id="nn-canvas"></canvas>
+
+    <!-- Floating Satellites -->
+    <div class="satellites-bg">
+        <div class="sat sat-1"><i data-lucide="satellite" style="width: 52px; height: 52px;"></i></div>
+        <div class="sat sat-2"><i data-lucide="satellite" style="width: 38px; height: 38px; transform: rotate(45deg);"></i></div>
+        <div class="sat sat-3"><i data-lucide="satellite" style="width: 46px; height: 46px; transform: rotate(-30deg);"></i></div>
+        <div class="sat sat-4"><i data-lucide="satellite" style="width: 60px; height: 60px; transform: rotate(90deg);"></i></div>
+        <div class="sat sat-5"><i data-lucide="satellite" style="width: 34px; height: 34px; transform: rotate(15deg);"></i></div>
+        <div class="sat sat-6"><i data-lucide="satellite" style="width: 42px; height: 42px; transform: rotate(-60deg);"></i></div>
+    </div>
+
+    <!-- Orbiting rings (subtle decoration) -->
+    <div class="orbit-wrap">
+        <div class="orbit-ring r1"><div class="orbit-dot"></div></div>
+        <div class="orbit-ring r2"><div class="orbit-dot"></div></div>
+        <div class="orbit-ring r3"><div class="orbit-dot"></div></div>
+    </div>
+
+    {% if session.get('user_id') %}
+    <!-- App layout with Side Navigation -->
+    <div class="app-layout">
+        <aside class="sidebar">
+            <a href="/dashboard" class="logo">
+                <div class="brand-icon-wrapper">
+                    <i data-lucide="satellite"></i>
+                </div>
+                <div>Satellite Images<br>Change Detection</div>
+            </a>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/history" class="{% if request.path == '/history' %}active{% endif %}">
+                    <i data-lucide="history" class="nav-icon"></i>
+                    <span>History</span>
+                </a>
+                <a href="/settings" class="{% if request.path == '/settings' %}active{% endif %}">
+                    <i data-lucide="settings" class="nav-icon"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="nav-user">
+                    <i data-lucide="user" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+                    <span class="username">{{ session.get('full_name', session.get('username')) }}</span>
+                </div>
+                <a href="/logout" class="btn btn-secondary logout-btn">Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    <div class="flash-messages">
+                      {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    <!-- Auth layout (Logged out) -->
+    <div class="auth-layout">
+        <header class="auth-header">
+            <div class="logo">
+                <div class="brand-icon-wrapper" style="width: 40px; height: 40px; border-radius: 10px;">
+                    <i data-lucide="satellite" style="width: 22px; height: 22px;"></i>
+                </div>
+                <div>Satellite Images Change Detection</div>
+            </div>
+        </header>
+
+        <main class="auth-content">
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div class="flash-messages" style="max-width: 500px; margin: 0 auto 20px;">
+                  {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            {% block auth_content %}{% endblock %}
+        </main>
+    </div>
+    {% endif %}
+
+    <script>
+        // Apply theme to body after DOM ready
+        (function() {
+            const t = localStorage.getItem('theme') || 'dark';
+            if (t === 'light') document.body.classList.add('light-theme');
+        })();
+
+        // ===== NEURAL NETWORK CANVAS =====
+        const canvas = document.getElementById('nn-canvas');
+        const ctx    = canvas.getContext('2d');
+        let W, H, particles;
+        const MAX_DIST = 160;
+        const PARTICLE_COLOR_DARK  = '#FDE68A';
+        const PARTICLE_COLOR_LIGHT = '#0F766E';
+
+        function getThemeColor() {
+            return (localStorage.getItem('theme') || 'dark') === 'light'
+                ? PARTICLE_COLOR_LIGHT : PARTICLE_COLOR_DARK;
+        }
+
+        function resize() {
+            W = canvas.width  = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+
+        function buildParticles() {
+            particles = [];
+            const count = Math.max(40, Math.floor(W * H / 14000));
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 0.7,
+                    vy: (Math.random() - 0.5) * 0.7,
+                    r: Math.random() * 1.8 + 0.8
+                });
+            }
+        }
+
+        function draw() {
+            requestAnimationFrame(draw);
+            ctx.clearRect(0, 0, W, H);
+            const col = getThemeColor();
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > W) p.vx *= -1;
+                if (p.y < 0 || p.y > H) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = col;
+                ctx.globalAlpha = 0.65;
+                ctx.fill();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const q  = particles[j];
+                    const dx = p.x - q.x, dy = p.y - q.y;
+                    const d  = Math.sqrt(dx*dx + dy*dy);
+                    if (d < MAX_DIST) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(q.x, q.y);
+                        ctx.strokeStyle = col;
+                        ctx.globalAlpha = (1 - d / MAX_DIST) * 0.3;
+                        ctx.lineWidth   = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        window.addEventListener('resize', () => { resize(); buildParticles(); });
+        resize(); buildParticles(); draw();
+
+        // Theme toggle helper (called from settings page)
+        window.setTheme = function(theme) {
+            localStorage.setItem('theme', theme);
+            document.body.classList.toggle('light-theme', theme === 'light');
+        };
+
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>

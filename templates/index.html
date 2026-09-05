@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Satellite Change Detection</title>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    background: linear-gradient(120deg,#1e3c72,#2a5298);
+    margin:0;
+    padding:40px;
+    text-align:center;
+    color:white;
+}
+
+.container{
+    background:white;
+    color:black;
+    padding:30px;
+    border-radius:10px;
+    max-width:1300px;
+    margin:auto;
+    box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+h2{
+    margin-bottom:25px;
+}
+
+.upload-area{
+    margin-bottom:20px;
+}
+
+input[type="file"]{
+    margin:10px;
+}
+
+button{
+    background:#2a5298;
+    color:white;
+    border:none;
+    padding:10px 25px;
+    font-size:16px;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1e3c72;
+}
+
+.result-row{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    margin-top:30px;
+    flex-wrap:wrap;
+}
+
+.result-box{
+    text-align:center;
+    margin:10px;
+}
+
+.result-box img{
+    width:250px;
+    height:250px;
+    object-fit:cover;
+    border-radius:8px;
+    border:2px solid #ccc;
+}
+
+.change-info{
+    margin-top:25px;
+    padding:20px;
+    border-radius:8px;
+    background:#f0f4ff;
+}
+
+.change-detected{
+    color:#e53935;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.no-change{
+    color:#2e7d32;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.percent{
+    font-size:18px;
+    margin-top:10px;
+}
+
+.xai-text{
+    margin-top:10px;
+    font-size:15px;
+    width:250px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Satellite Change Detection with Explainable AI</h2>
+
+<form method="POST" enctype="multipart/form-data">
+
+<div class="upload-area">
+
+<b>Upload Image A</b><br>
+<input type="file" name="imageA" required>
+
+<br><br>
+
+<b>Upload Image B</b><br>
+<input type="file" name="imageB" required>
+
+</div>
+
+<button type="submit">Detect Change</button>
+
+</form>
+
+
+{% if result_image %}
+
+<div class="result-row">
+
+<div class="result-box">
+<h3>Image A</h3>
+<img src="{{ imageA }}">
+</div>
+
+<div class="result-box">
+<h3>Image B</h3>
+<img src="{{ imageB }}">
+</div>
+
+<div class="result-box">
+<h3>Change Map</h3>
+<img src="{{ result_image }}">
+</div>
+
+<div class="result-box">
+<h3>Explainable AI</h3>
+<img src="{{ xai_image }}">
+
+<div class="xai-text">
+Red and yellow regions indicate areas where the AI model strongly detected changes.
+</div>
+
+</div>
+
+</div>
+
+
+<div class="change-info">
+
+{% if change_text == "Change Detected" %}
+
+<div class="change-detected">
+{{ change_text }}
+</div>
+
+{% else %}
+
+<div class="no-change">
+{{ change_text }}
+</div>
+
+{% endif %}
+
+<div class="percent">
+Change Area: <b>{{ change_percent }} %</b>
+</div>
+
+<div class="percent">
+AI Confidence Score: <b>{{ confidence }} %</b>
+</div>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>
+

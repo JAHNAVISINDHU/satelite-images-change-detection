@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Login — Satellite Images Change Detection{% endblock %}
+
+{% block auth_content %}
+<style>
+    .auth-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        min-height: 500px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow);
+    }
+
+    /* Left panel */
+    .auth-left {
+        background: var(--card-bg);
+        padding: 50px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .auth-left::before {
+        content: '';
+        position: absolute;
+        width: 280px; height: 280px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+        top: -80px; right: -80px;
+    }
+
+    .auth-left .brand-icon {
+        width: 64px; height: 64px;
+        background: var(--primary-glow);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 28px;
+    }
+
+    .auth-left h1 {
+        font-family: var(--font-headings);
+        font-size: 22px;
+        line-height: 1.35;
+        margin-bottom: 16px;
+        color: var(--primary);
+    }
+
+    .auth-left p {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        margin-bottom: 32px;
+    }
+
+    .feature-list { list-style: none; }
+    .feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+    }
+    .feature-list li span.dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--primary);
+        flex-shrink: 0;
+        box-shadow: 0 0 8px var(--primary);
+    }
+
+    /* Right panel / form */
+    .auth-right {
+        padding: 50px 44px;
+        background: var(--card-bg);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .auth-right h2 {
+        font-family: var(--font-headings);
+        font-size: 22px;
+        margin-bottom: 6px;
+        color: var(--primary);
+    }
+
+    .auth-right .sub-heading {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 30px;
+    }
+
+    .form-group { margin-bottom: 4px; }
+
+    .input-icon-wrap {
+        position: relative;
+    }
+    .input-icon-wrap input {
+        padding-left: 40px;
+        margin: 0;
+    }
+    .input-icon-wrap .icon {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .input-icon-wrap .icon svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2px;
+    }
+
+    .btn-full {
+        width: 100%;
+        text-align: center;
+        margin-top: 6px;
+        padding: 13px;
+        font-size: 14px;
+    }
+
+    .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 22px 0;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+    .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    @media (max-width: 700px) {
+        .auth-grid { grid-template-columns: 1fr; }
+        .auth-left { display: none; }
+    }
+</style>
+
+<div class="auth-grid">
+    <!-- Left Info Panel -->
+    <div class="auth-left">
+        <div class="brand-icon">
+            <i data-lucide="satellite" style="width: 32px; height: 32px; color: var(--primary);"></i>
+        </div>
+        <h1>Satellite Images<br>Change Detection</h1>
+        <p>An enterprise-grade platform utilizing deep transformer architectures to detect, quantify, and map surface alterations across co-registered multi-temporal satellite datasets with pixel-level accuracy.</p>
+        <ul class="feature-list">
+            <li><span class="dot"></span> ChangeFormer V2 Dual-Branch Attention Model</li>
+            <li><span class="dot"></span> Grad-CAM Explainable AI Heatmap Visualization</li>
+            <li><span class="dot"></span> Real-time Precision, Recall, and F1 Metrics</li>
+            <li><span class="dot"></span> Secure Analytical Historical Log & Audit Trail</li>
+        </ul>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-right">
+        <h2>Welcome Back</h2>
+        <p class="sub-heading">Sign in to access your detection dashboard</p>
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-icon-wrap">
+                    <span class="icon"><i data-lucide="user"></i></span>
+                    <input type="text" name="username" placeholder="your_username" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-icon-wrap">
+                    <span class="icon"><i data-lucide="lock"></i></span>
+                    <input type="password" name="password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-full">Sign In →</button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <p style="text-align:center; font-size:13px; color:var(--text-muted);">
+            Don't have an account?
+            <a href="/register" class="inline-link">Create Account</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
