@@ -49,12 +49,12 @@
 │  Conv 64→128 (enc2)    │   d_model=256, nhead=8             │
 │  Conv 128→256 (enc3)   │   2D SinCos Positional Embedding   │
 ├────────────────────────┴────────────────────────────────────┤
-│  Difference Features: |F_A - F_B| at each encoder scale    │
+│  Difference Features: |F_A - F_B| at each encoder scale     │
 ├─────────────────────────────────────────────────────────────┤
 │  CNN Decoder (Skip Connections)                             │
-│  ConvTranspose 256→128 → concat skip → Conv                │
-│  ConvTranspose 128→64  → concat skip → Conv                │
-│  Final Conv 64→1 + Sigmoid → Change Probability Map        │
+│  ConvTranspose 256→128 → concat skip → Conv                 │
+│  ConvTranspose 128→64  → concat skip → Conv                 │
+│  Final Conv 64→1 + Sigmoid → Change Probability Map         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
