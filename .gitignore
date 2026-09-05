@@ -1,0 +1,25 @@
+# Virtual environments
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+app.db
+app.db-journal
+
+# Logs and outputs
+*.log
+static/results/
+static/synthetic_dataset/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
